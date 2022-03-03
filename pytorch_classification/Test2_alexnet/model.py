@@ -6,6 +6,7 @@ class AlexNet(nn.Module):
     def __init__(self, num_classes=1000, init_weights=False):
         super(AlexNet, self).__init__()
         self.features = nn.Sequential(
+            # 原论文中卷积核个数是96个 这里由于数据集较小 将其减半 最后效果差不多
             nn.Conv2d(3, 48, kernel_size=11, stride=4, padding=2),  # input[3, 224, 224]  output[48, 55, 55]
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=3, stride=2),                  # output[48, 27, 27]
@@ -21,7 +22,7 @@ class AlexNet(nn.Module):
             nn.MaxPool2d(kernel_size=3, stride=2),                  # output[128, 6, 6]
         )
         self.classifier = nn.Sequential(
-            nn.Dropout(p=0.5),
+            nn.Dropout(p=0.5),                  # 默认0.5
             nn.Linear(128 * 6 * 6, 2048),
             nn.ReLU(inplace=True),
             nn.Dropout(p=0.5),
