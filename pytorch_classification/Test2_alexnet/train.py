@@ -127,25 +127,55 @@ def main():
                 val_images, val_labels = val_data
                 outputs = net(val_images.to(device))
 
-
                 '''
                 dim 是max函数 索引 的维度,0是按列，1是按行。-1是最后一个维度，一般是按行。
-                由于验证集的batch_size为4，一共有五个类别，所以没遍历一次就输出一个tensor(4,5)
-                tensor([[-0.2434,  0.5892, -1.1177,  0.9521, -0.4927],
-                        [ 1.0084,  0.5093, -0.4579, -0.8835, -0.3898],
-                        [ 0.4746,  0.1932, -0.1672, -0.4958, -0.1249],
-                        [ 0.7939,  0.5353, -0.5026, -0.6986, -0.3449]], device='cuda:0')
+                由于验证集的batch_size为4，一共有五个类别，所以每遍历一次就输出一个tensor(4,5)的output
+                tensor([[ 1.1706,  0.7913, -1.4664, -0.1145, -1.0523],
+                        [ 1.3434,  0.8543, -0.6127, -1.5611, -0.5388],
+                        [ 0.6048,  0.4668, -0.3617, -0.7187, -0.2800],
+                        [ 0.7468,  0.5934, -0.4958, -0.7985, -0.4013]], device='cuda:0')
+                
+                '''
+                # torch.argmax()    不指定dim，返回张量中所有数据的最大值位置（按照张量被拉伸为一维向量算）；
+                #                   指定dim，返回指定维度的最大值位置，另外可以通过keepdim来保留原张量的形状
+                # torch.max(),      不指定dim参数，返回输入张量中所有数据的最大值；
+                #                   指定dim参数，则返回按照指定维度的最大值和各最大值对应的位置
+                #                       dim=0 返回每一列中最大值的那个元素，且返回索引（返回最大元素在这一列的行索引）
+                #                       dim=1 返回每一行中最大值的那个元素，且返回其索引（返回最大元素在这一行的列索引）
+
+                '''
+                torch.max(outputs, dim=1)的结果
+                torch.return_types.max(
+                        values=tensor([1.1706, 1.3434, 0.6048, 0.7468], device='cuda:0'),
+                        indices=tensor([0, 0, 0, 0], device='cuda:0'))
+                代表:      每一行最大值的元素值value分别为: 1.1706, 1.3434, 0.6048, 0.7468
+                          每一行最大值的元素的索引indices分别为: 0, 0, 0, 0
+                而predict_y = torch.max(outputs, dim=1)[1]
+                代表：     返回一个由 每一行最大值元素在这一行的列索引 所组成的tensor张量，本次debug中的结果即[0,0,0,0]
                 '''
                 predict_y = torch.max(outputs, dim=1)[1]
-                print('-*-*-*-*-*-*-*-*-*-*-*-*-**-*--*-')
                 print(predict_y)
-                acc += torch.eq(predict_y, val_labels.to(device)).sum().item()  # 查eq是什么意思 以及继续后面的操作  打开桌面的网址
+                '''
+                torch.eq(predict_y, val_labels.to(device)).sum().item()
+                式中predict_y与val_labels.to(device)是两个大小相同的tensor
+                而torch.eq()函数就是用来比较对应位置数字，相同则为1，否则为0，输出与那两个tensor大小相同，并且其中只有1和0。
+                假设             predict_y = [0 1 2 3 4]
+                    val_labels.to(device) = [4 3 2 1 4]
+                                torch.eq()得 [0 0 1 0 1]
+                
+                torch.eq().sum()就是将所有值相加，但得到的仍是tensor.且得到的结果是[2]。
+                torch.eq().sum().item()得到值2
+                
+                用这个来计算训练集、验证集准确率时，记得一个epoch后要除的分母是训练集、验证集的数据量大小！！！
+
+                '''
+                acc += torch.eq(predict_y, val_labels.to(device)).sum().item()
 
         val_accurate = acc / val_num
         print('[epoch %d] train_loss: %.3f  val_accuracy: %.3f' %
-              (epoch + 1, running_loss / train_steps, val_accurate))
+              (epoch + 1, running_loss / train_steps, val_accurate))    # running_loss / train_steps 算的是平均损失
 
-        if val_accurate > best_acc:
+        if val_accurate > best_acc:                                     # 保存最佳精度到'./AlexNet.pth'
             best_acc = val_accurate
             torch.save(net.state_dict(), save_path)
 
