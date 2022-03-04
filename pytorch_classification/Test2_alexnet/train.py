@@ -154,7 +154,6 @@ def main():
                 代表：     返回一个由 每一行最大值元素在这一行的列索引 所组成的tensor张量，本次debug中的结果即[0,0,0,0]
                 '''
                 predict_y = torch.max(outputs, dim=1)[1]
-                print(predict_y)
                 '''
                 torch.eq(predict_y, val_labels.to(device)).sum().item()
                 式中predict_y与val_labels.to(device)是两个大小相同的tensor
